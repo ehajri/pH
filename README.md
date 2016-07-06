@@ -59,6 +59,7 @@ pH.From('Admin').AddModule({
   controller: function() {},
   view: function() {}
 });
+
 //using From #3
 pH.From({header: 'Admin'}).AddModule({
   route: '/admin/resetpassword',
