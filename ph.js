@@ -5,11 +5,27 @@
 var pH = (function() {
 
     var routes = m.prop({});
+
     var sections = Object.create(null);
+
+    var nav = {
+        view: function() {
+            //return m('ul', R.keys(pH.Routes).map(function(a) { return m(Menu, {"href": a}) ; }, pH.Routes));
+
+            return m('ul', R.keys(sections).map(function(section) {
+                return m('li', [
+                            section,
+                            m('ul', sections[section].links.map(function(link) {
+                                return m('li', m('a', {href: link, config: m.route.mode}, link));
+                            }))
+                        ]);
+            }));
+        }
+    };
 
 
     var Section = function(section) {
-        var array  = [];
+        var links  = [];
 
         if (!R.has(section)(sections)) {
             sections[section] = this;
@@ -18,11 +34,11 @@ var pH = (function() {
         }
 
         this.section = section;
-        this.array = array;
+        this.links = links;
     };
 
     Section.prototype.AddModule = function (module) {
-        this.array.push(module.route);
+        this.links.push(module.route);
         routes()[module.route] = module;
         return this;
     };
