@@ -65,7 +65,7 @@
             return (
             R.keys(sections).map(function(section) {
                 var sec = sections[section];
-                if (!authorized(claims, sec)) { return; }
+                if (!authorized(_claims, sec)) { return; }
                 return (
                     R.has('sub')(sec) && sec.sub.length > 0 ?
                     m.component(dropdownmenu, {header: sec.header, sub: sec.sub})
@@ -131,10 +131,13 @@
     };
 
     var authorized = function(claims, component) {
+        var required = component.claims,
+            requiredaslist = R.equals(R.type(required), 'Object') ? [required] : required;
         return R.contains({type: 'Type', value: 'Administrator'}, claims) ||
             (R.has('claims')(component) && (
-                R.equals({type: 'Type', value: 'any'}, component.claims) ||
-                R.intersection(claims, component.claims).length > 0
+                R.equals({type: 'Type', value: 'any'}, required) ||
+
+                R.intersection(claims, requiredaslist).length > 0
             ));
     };
 
@@ -146,11 +149,11 @@
                 return R.merge(o, a);
             },
             {},
-            pH.filter(claims)
+            pH.filter(_claims)
         );
     };
 
-    var claims = [];
+    var _claims = [];
 
 
     document.addEventListener('DOMContentLoaded', function(e) {
@@ -161,7 +164,7 @@
 
     var pHObj = {
         SetClaims: function(claims) {
-            this.claims = claims;
+            _claims = claims;
         },
         filter: filter,
         sections: sections,
