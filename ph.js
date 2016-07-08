@@ -2,7 +2,7 @@
  * Created by Ebrahem on 7/7/2016.
  */
 
-var pH = (function() {
+(function() {
 
     var routes = m.prop({});
 
@@ -28,7 +28,7 @@ var pH = (function() {
                         m('li',
                             m('a', {
                                 href: sub.route,
-                                config: m.route.mode
+                                config: m.route
                             }, sub.header)
                         ));})
             ])
@@ -36,8 +36,15 @@ var pH = (function() {
         }
     };
     var lonemenu = {
-        view: function(ctrl, header) {
-            return m('li', m('a', header));
+        view: function(ctrl, args) {
+            return (
+                m('li',
+                    m('a', {
+                        href: args.route,
+                        config: m.route
+                    }, args.header)
+                )
+            );
         }
     };
     var dropdownmenu = {
@@ -56,21 +63,32 @@ var pH = (function() {
             return (
             R.keys(sections).map(function(section) {
                 var sec = sections[section];
+                if (!authorized(claims, sec)) { return; }
                 return (
                     R.has('sub')(sec) && sec.sub.length > 0 ?
                     m(dropdownmenu, {header: sec.header, sub: sec.sub})
                     :
-                    m(lonemenu, sec.header)
+                    m(lonemenu, {header: sec.header, route: sec.route || ''})
                 );
             }));
         }
+    };
+
+    var AddRoute = function(route, component) {
+        routes()[route] = component;
     };
 
     var Section = function(section) {
         if (R.equals(R.type(section), 'Object')) {
             var id = this.id = section.id || section.header;
             if (!R.has(id)(sections)) {
-                sections[id] = R.merge(this, section);
+                this.header = section.header;
+                this.route = section.route;
+                this.claims = section.claims;
+                this.view = section.view;
+                this.controller = section.controller;
+                sections[id] = this;
+                AddRoute(section.route, section);
             } else {
                 throw new Error({name: 'Section Error', message: 'Section "' + id + '" does exist!'});
             }
@@ -91,17 +109,59 @@ var pH = (function() {
 
         this['sub'].push(module);
 
-        routes()[module.route] = module;
+        AddRoute(module.route, module);
         return this;
     };
 
+    var filter = function(claims) {
+        return R.flatten(
+            R.keys(sections).map(
+                function(t) {
+                    var s = pH.sections[t];
+                    return s.sub ? [].concat(s, s.sub) : s;
+                }
+            )
+        ).filter(
+            function(r) {
+                return authorized(claims, r);
+            }
+        );
+    };
+
+    var authorized = function(claims, component) {
+        return R.contains('Administrator', claims) ||
+            (R.has('claims')(component) && (
+                R.equals('any', component.claims) ||
+                R.intersection(claims, component.claims.split(',')).length > 0
+            ));
+    };
+
+    var GetRoutes = function() {
+        return R.reduce(
+            function(o, v) {
+                var a = {};
+                a[v.route] = v;
+                return R.merge(o, a);
+            },
+            {},
+            pH.filter(claims)
+        );
+    };
+
+    var claims;
+
+
     document.addEventListener('DOMContentLoaded', function(e) {
-        //m.mount(document.getElementById('main'), AccModule1);
+        //m.mount(document.getElementById'main'), AccModule1);
         m.mount(document.getElementById('nav'), nav);
-        m.route(document.getElementById('main'), '/', routes);
+        m.route(document.getElementById('main'), '/', GetRoutes());
     });
 
-    return {
+    var pHObj = {
+        SetClaims: function(claims) {
+            this.claims = claims;
+        },
+        filter: filter,
         sections: sections,
         Routes: routes(),
         AddSection: function(section) {
@@ -124,4 +184,5 @@ var pH = (function() {
             throw ({name: 'From Error', message: 'Unknown section, args: ' + JSON.stringify(section)});
         }
     };
+    window.pH = pHObj;
 })();
