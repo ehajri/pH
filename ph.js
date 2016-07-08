@@ -131,10 +131,10 @@
     };
 
     var authorized = function(claims, component) {
-        return R.contains('Administrator', claims) ||
+        return R.contains({type: 'Type', value: 'Administrator'}, claims) ||
             (R.has('claims')(component) && (
-                R.equals('any', component.claims) ||
-                R.intersection(claims, component.claims.split(',')).length > 0
+                R.equals({type: 'Type', value: 'any'}, component.claims) ||
+                R.intersection(claims, component.claims).length > 0
             ));
     };
 
