@@ -2,6 +2,15 @@
 
 pH mithriljs wrapper to create sections and modules, to automatically render routes and navigation menu.
 
+Renders and Mounts:
+```javascript
+//call m.route()
+pH.InitRoute(string: node_id);
+
+//call m.mount()
+pH.InitMenu(string: node_id);
+```
+
 Usage:
 ```javascript
 pH.AddSection({
