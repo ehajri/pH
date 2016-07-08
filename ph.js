@@ -11,10 +11,10 @@
     var parentmenu = {
         view: function(ctrl, args) {
             return (
-            m('a', {class: 'dropdown-toggle', 'data-toggle': 'dropdown', 'role': 'button', 'aria-haspopup': 'true', 'aria-expanded': 'false'},
+            m('a', {class: '', 'data-toggle': 'dropdown', 'data-hover': 'megamenu-dropdown', 'data-close-others': 'true' },
                 [
                     args,
-                    m('span', {class: 'caret'})
+                    m('i.fa.fa-angle-down')
                 ])
             );
         }
@@ -22,14 +22,16 @@
     var submenu = {
         view: function(ctrl, subs) {
             return (
-            m('ul', {class: 'dropdown-menu'},
+            m('ul', {class: 'dropdown-menu pull-left'},
                 [
                     subs.map(function(sub) {return (
                         m('li',
                             m('a', {
                                 href: sub.route,
                                 config: m.route
-                            }, sub.header)
+                            }
+                            , m('i.fa.fa-cubes')
+                            , ' ' + sub.header)
                         ));})
             ])
             );
@@ -50,10 +52,10 @@
     var dropdownmenu = {
       view: function(ctrl, args) {
           return (
-              m('li', {class: 'dropdown'},
+              m('li', {class: 'menu-dropdown classic-menu-dropdown'},
               [
-                  m(parentmenu, args.header),
-                  m(submenu, args.sub)
+                  m.component(parentmenu, args.header),
+                  m.component(submenu, args.sub)
               ])
           );
       }
@@ -66,9 +68,9 @@
                 if (!authorized(claims, sec)) { return; }
                 return (
                     R.has('sub')(sec) && sec.sub.length > 0 ?
-                    m(dropdownmenu, {header: sec.header, sub: sec.sub})
+                    m.component(dropdownmenu, {header: sec.header, sub: sec.sub})
                     :
-                    m(lonemenu, {header: sec.header, route: sec.route || ''})
+                    m.component(lonemenu, {header: sec.header, route: sec.route || ''})
                 );
             }));
         }
@@ -148,13 +150,13 @@
         );
     };
 
-    var claims;
+    var claims = [];
 
 
     document.addEventListener('DOMContentLoaded', function(e) {
         //m.mount(document.getElementById'main'), AccModule1);
-        m.mount(document.getElementById('nav'), nav);
-        m.route(document.getElementById('main'), '/', GetRoutes());
+        //m.mount(document.getElementById('nav'), nav);
+        //m.route(document.getElementById('main'), '/', GetRoutes());
     });
 
     var pHObj = {
@@ -166,6 +168,12 @@
         Routes: routes(),
         AddSection: function(section) {
             return new Section(section);
+        },
+        InitMenu: function(node) {
+            m.mount(document.getElementById(node), nav);
+        },
+        InitRoute: function(node) {
+            m.route(document.getElementById(node), '/', GetRoutes());
         },
         From: function(section) {
             var header;
