@@ -24,7 +24,7 @@
             return (
             m('ul', {class: 'dropdown-menu pull-left'},
                 [
-                    subs.map(function(sub) {return (
+                    subs.map(function(sub) {return sub.renderAsMenu === false ? null : (
                         m('li',
                             m('a', {
                                 href: sub.route,
@@ -60,6 +60,7 @@
           );
       }
     };
+
     var nav = {
         view: function() {
             return (
@@ -84,11 +85,8 @@
         if (R.equals(R.type(section), 'Object')) {
             var id = this.id = section.id || section.header;
             if (!R.has(id)(sections)) {
-                this.header = section.header;
-                this.route = section.route;
-                this.claims = section.claims;
-                this.view = section.view;
-                this.controller = section.controller;
+                //copy properties over to this
+                Object.assign(this, section);
                 sections[id] = this;
                 AddRoute(section.route, section);
             } else {
@@ -192,7 +190,8 @@
                 return sections[header];
             }
 
-            throw ({name: 'From Error', message: 'Unknown section, args: ' + JSON.stringify(section)});
+            console.log('Throwing error', JSON.stringify(section));
+            throw new Error({name: 'From Error', message: 'Unknown section, args:'});
         }
     };
     window.pH = pHObj;
