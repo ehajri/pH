@@ -28,7 +28,7 @@ function compile(watch) {
 
     if (watch) {
         bundler.on('update', function() {
-            console.log('-> bundling...');
+            console.log('-> bundling...', new Date().toTimeString());
             rebundle();
         });
     }

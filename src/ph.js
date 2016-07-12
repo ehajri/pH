@@ -3,8 +3,19 @@
  */
 
 (function() {
+    var _sections = [];
 
-    var routes = m.prop({});
+    // Ramda predicates!
+    var isRoot         = R.complement(R.has('parent'));
+    var isChildOf      = R.propEq('parent');
+    var children       = R.compose(R.filter, isChildOf);
+    var renderable     = R.complement(R.propEq('toRender', false));
+    var sorted         = R.compose(R.reverse, R.sortBy(R.prop('index')));
+    var roots          = R.filter(x => isRoot(x) && renderable(x));
+    var findIdByHeader = R.compose(R.find(R.__, _sections), R.propEq('header'));
+    // R.filter(x => isRoot(x), objects);
+    // R.filter(x => Renderable(x), objects);
+
 
     var sections = Object.create(null);
 
@@ -19,6 +30,7 @@
             );
         }
     };
+
     var submenu = {
         view: function(ctrl, subs) {
             return (
@@ -34,6 +46,25 @@
                             , ' ' + sub.header)
                         ));})
             ])
+            );
+        }
+    };
+    submenu = {
+        view: function(ctrl, subs) {
+            return (
+                m('ul', {class: 'dropdown-menu pull-left'},
+                    [
+                        subs.map(function(sub) {
+                            return (
+                            m('li',
+                                m('a', {
+                                        href: sub.route,
+                                        config: m.route
+                                    }
+                                    , m('i.fa.fa-cubes')
+                                    , ' ' + sub.header)
+                            ));})
+                    ])
             );
         }
     };
@@ -61,6 +92,12 @@
       }
     };
 
+
+
+
+
+
+
     var nav = {
         view: function() {
             return (
@@ -77,8 +114,30 @@
         }
     };
 
-    var AddRoute = function(route, component) {
-        routes()[route] = component;
+    nav = {
+        view: function() {
+            return (
+                sorted(roots(_sections)).map(function(section) {
+                    var sec = section;
+                    if (!authorized(_claims, sec)) { return; }
+                    return (
+                        children(sec.id)(_sections).length == 0 ?
+                            //lone
+                            m.component(lonemenu, {header: sec.header, route: sec.route || ''})
+                            :
+                            //got children!
+                            m.component(dropdownmenu, {header: sec.header, sub: children(sec.id)(_sections)})
+
+                        //version 2 with arrow function!
+                        /*(x=children(sec.id)(_sections)) => x.length == 0 ?
+                            //lone
+                            m.component(lonemenu, {header: sec.header, route: sec.route || ''})
+                            :
+                            //got children!
+                            m.component(dropdownmenu, {header: sec.header, sub: x})*/
+                    );
+                }));
+        }
     };
 
     var Section = function(section) {
@@ -88,7 +147,6 @@
                 //copy properties over to this
                 Object.assign(this, section);
                 sections[id] = this;
-                AddRoute(section.route, section);
             } else {
                 throw new Error({name: 'Section Error', message: 'Section "' + id + '" does exist!'});
             }
@@ -102,15 +160,32 @@
         }
     };
 
+    var Section2 = function(section) {
+        "use strict";
+        this.id = guid();
+        Object.assign(this, section);
+        _sections.push(this);
+    }
+    Section2.prototype.AddModule = function (module) {
+        module.parent = this.id;
+        _sections.push(module);
+        return this;
+    };
+
     Section.prototype.AddModule = function (module) {
         if (!R.has('sub')(this)) {
             this['sub'] = [];
         }
 
         this['sub'].push(module);
-
-        AddRoute(module.route, module);
         return this;
+    };
+
+    var guid = function() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+        });
     };
 
     var filter = function(claims) {
@@ -129,18 +204,38 @@
     };
 
     var authorized = function(claims, component) {
+        console.log('checking claims for', component.header, 'user', claims);
+
         var required = component.claims,
             requiredaslist = R.equals(R.type(required), 'Object') ? [required] : required;
-        return R.contains({type: 'Type', value: 'SystemAdministrator'}, claims) ||
+        var bool = (R.contains({type: 'Type', value: 'SystemAdministrator'}, claims) ||
             (R.has('claims')(component) && (
                 R.equals({type: 'Type', value: 'any'}, required) ||
 
                 R.intersection(claims, requiredaslist).length > 0
-            ));
+            )));
+        console.log(bool);
+        return bool;
+    };
+
+    authorized = function(claims, component) {
+        console.log(component);
+
+        var required = component.claims,
+            requiredaslist = R.equals(R.type(required), 'Object') ? [required] : required;
+        var bool = (R.contains({type: 'Type', value: 'SystemAdministrator'}, claims) ||
+        (R.has('claims')(component) && (
+            R.equals({type: 'Type', value: 'any'}, required) ||
+
+            R.intersection(claims, requiredaslist).length > 0
+        )));
+        console.log(bool);
+        return bool;
     };
 
     var GetRoutes = function() {
-        console.log(_claims);
+        console.log('claims', _claims);
+
         return R.reduce(
             (object, value) => {
                 "use strict";
@@ -152,6 +247,11 @@
             filter(_claims)
         );
     };
+
+    GetRoutes = function() {
+        "use strict";
+        return R.fromPairs(R.filter(x => R.has('route')(x), _sections).map(x => [x.route, x.section]));
+    }
 
     var _claims = [];
 
@@ -168,17 +268,22 @@
         },
         filter: filter,
         sections: sections,
+        sections2: _sections,
         Routes: GetRoutes(),
         AddSection: function(section) {
-            return new Section(section);
+            return new Section2(section);
         },
         InitMenu: function(node) {
             m.mount(document.getElementById(node), nav);
         },
         InitRoute: function(node) {
-            m.route(document.getElementById(node), '/', GetRoutes());
+            var rr = GetRoutes();
+            console.log('setting routes, total of', R.keys(rr).length)
+            console.log('routes', rr);
+            m.route(document.getElementById(node), '/', rr);
         },
         From: function(section) {
+            /*
             var header;
             if (section instanceof Section) {
                 header = section.id;
@@ -194,6 +299,26 @@
 
             console.log('Throwing error', JSON.stringify(section));
             throw new Error({name: 'From Error', message: 'Unknown section, args:'});
+            */
+            if (section instanceof Section) {
+                return section;
+            }
+
+            var found;
+
+            if(R.equals(R.type(section), 'String')) {
+                found = findIdByHeader(section);
+            } else if(R.equals(R.type(section), 'Object')) {
+                found = findIdByHeader(section.header);
+            }
+
+            if (found) {
+                return found;
+            }
+
+            console.log('Throwing error', JSON.stringify(section));
+            throw new Error({name: 'From Error', message: 'Unknown section, args:'});
+
         }
     };
     window.pH = pHObj;
