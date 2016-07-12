@@ -117,7 +117,7 @@
         return R.flatten(
             R.keys(sections).map(
                 function(t) {
-                    var s = pH.sections[t];
+                    var s = sections[t];
                     return s.sub ? [].concat(s, s.sub) : s;
                 }
             )
@@ -131,7 +131,7 @@
     var authorized = function(claims, component) {
         var required = component.claims,
             requiredaslist = R.equals(R.type(required), 'Object') ? [required] : required;
-        return R.contains({type: 'Type', value: 'Administrator'}, claims) ||
+        return R.contains({type: 'Type', value: 'SystemAdministrator'}, claims) ||
             (R.has('claims')(component) && (
                 R.equals({type: 'Type', value: 'any'}, required) ||
 
@@ -140,14 +140,16 @@
     };
 
     var GetRoutes = function() {
+        console.log(_claims);
         return R.reduce(
-            function(o, v) {
-                var a = {};
-                a[v.route] = v;
-                return R.merge(o, a);
+            (object, value) => {
+                "use strict";
+                var tempObj = {};
+                tempObj[value['route']] = value;
+                return R.merge(object, tempObj);
             },
             {},
-            pH.filter(_claims)
+            filter(_claims)
         );
     };
 
@@ -166,7 +168,7 @@
         },
         filter: filter,
         sections: sections,
-        Routes: routes(),
+        Routes: GetRoutes(),
         AddSection: function(section) {
             return new Section(section);
         },
@@ -196,6 +198,3 @@
     };
     window.pH = pHObj;
 })();
-
-
-

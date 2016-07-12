@@ -2,10 +2,6 @@
   <library name="Generated files" type="javaScript">
     <properties>
       <sourceFilesUrls>
-        <item url="file://$PROJECT_DIR$/compiled/ph.min.js" />
-        <item url="file://$PROJECT_DIR$/compiled/phcompile.min.js" />
-        <item url="file://$PROJECT_DIR$/compiled/phcompiled.min.js" />
-        <item url="file://$PROJECT_DIR$/compiled/ph.compiled.min.js" />
         <item url="file://$PROJECT_DIR$/compiled/ph.compiled.min.js" />
       </sourceFilesUrls>
     </properties>
@@ -16,7 +12,6 @@
       <root url="file://$PROJECT_DIR$/compiled/ph.min.js" />
       <root url="file://$PROJECT_DIR$/compiled/phcompile.min.js" />
       <root url="file://$PROJECT_DIR$/compiled/phcompiled.min.js" />
-      <root url="file://$PROJECT_DIR$/compiled/ph.compiled.min.js" />
       <root url="file://$PROJECT_DIR$/compiled/ph.compiled.min.js" />
     </CLASSES>
     <SOURCES />
