@@ -4,17 +4,34 @@
 
 (function() {
     var _sections = [];
+    var _menuIndex = [];
 
     // Ramda predicates!
     var isRoot         = R.complement(R.has('parent'));
     var isChildOf      = R.propEq('parent');
     var children       = R.compose(R.filter, isChildOf);
     var renderable     = R.complement(R.propEq('toRender', false));
-    var sorted         = R.compose(R.reverse, R.sortBy(R.prop('index')));
+    //as per MOA' suggestion, sorting using a mapper is more scalable.
+    //var sorted         = R.compose(R.reverse, R.sortBy(R.prop('index')));
+    var sort           = items => {
+        "use strict";
+        // console.log('items', items.map(x => x.header));
+        // console.log('menuIndex', _menuIndex);
+
+        var filtered = R.filter(x => R.indexOf(x.header, _menuIndex) >= 0, items);
+        // console.log('filtered', filtered.map(x => x.header));
+
+        var sorted = R.sort((a,b) => R.indexOf(a.header, _menuIndex) > R.indexOf(b.header, _menuIndex));
+        var sortedd = sorted(filtered)
+        // console.log('sorted', sortedd.map(x => x.header));
+
+        var union = R.union(sortedd, R.difference(items, filtered));
+        // console.log('final', union.map(x => x.header));
+
+        return union;
+    };
     var roots          = R.filter(x => isRoot(x) && renderable(x));
     var findIdByHeader = R.compose(R.find(R.__, _sections), R.propEq('header'));
-    // R.filter(x => isRoot(x), objects);
-    // R.filter(x => Renderable(x), objects);
 
     var parentmenu = {
         view: function(ctrl, args) {
@@ -33,7 +50,7 @@
             return (
                 m('ul', {class: 'dropdown-menu pull-left'},
                     [
-                        R.filter(x => renderable(x), subs).map(function(sub) {
+                        sort(R.filter(x => renderable(x), subs)).map(function(sub) {
                             return (
                             m('li',
                                 m('a', {
@@ -76,7 +93,7 @@
     var nav = {
         view: function() {
             return (
-                sorted(roots(_sections)).map(function(section) {
+                sort(roots(_sections)).map(function(section) {
                     var sec = section;
                     if (!authorized(_claims, sec)) { return; }
                     return (
@@ -148,7 +165,7 @@
 
     var GetRoutes = function() {
         "use strict";
-        return R.fromPairs(R.filter(x => R.has('route')(x), _sections).map(x => [x.route, x.section]));
+        return R.fromPairs(R.filter(x => R.has('route')(x), _sections).map(x => [x.route, x]));
     }
 
     var _claims = [];
@@ -157,9 +174,10 @@
         SetClaims: function(claims) {
             _claims = claims;
         },
+        Sort: sort,
         filter: filter,
         sections: _sections,
-        Routes: GetRoutes(),
+        Routes: () => GetRoutes(),
         AddSection: function(section) {
             return new Section(section);
         },
@@ -170,6 +188,7 @@
             var rr = GetRoutes();
             m.route(document.getElementById(node), '/', rr);
         },
+        SetMenuIndex: (index) => _menuIndex = index,
         From: function(section) {
             /*
             var header;
